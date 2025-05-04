@@ -1,0 +1,2 @@
+longport==2.1.12
+flask==2.3.3

@@ -5,10 +5,10 @@
 // 移动止损能让我们的收益最大化, 移动止损的百分比是8%，回撤百分比是1.5%
 // 股票类型最好选择波动性较大的股票，比如TSLA，MSTR, BTC
 // 测试股票：TSLA，MSTR, BTC
-// 测试周期：5分钟、45分钟, 其中45分钟收益较高，长周期的假突破较少
+// 测试周期：5分钟、45分钟, 其中45分钟收益较高，算长远的价值投资了。5分钟则属于短线交易。
 
 // @version = 4
-strategy(title="breaks", shorttitle="Leyen - Breaks [45min]", overlay=true, max_bars_back=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy(title="breaks", shorttitle="Leyen - Breaks [5min]", overlay=true, max_bars_back=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 
 toggleBreaks = input(true, title="显示突破信号")
 leftBars = input(15, title="左侧柱数")
@@ -19,6 +19,10 @@ volumeThresh = input(20, title="成交量阈值")
 stopLossPercent = input(1.5, title="止损百分比 (%)")
 takeProfitPercent = input(8.0, title="移动止损触发百分比 (%)")
 trailStopPercent = input(1.5, title="移动止损回撤百分比 (%)")
+
+// 日期范围选择
+startDate = input(timestamp("2025-01-01"), "开始日期",  type = input.time, group="回测设置")
+endDate = input(timestamp("2099-12-31"), "结束日期",  type = input.time, group="回测设置")
 
 highUsePivot = fixnan(pivothigh(leftBars, rightBars)[1])
 lowUsePivot = fixnan(pivotlow(leftBars, rightBars)[1])
@@ -34,11 +38,13 @@ osc = 100 * (short - long) / long
 long_signal = crossover(close, highUsePivot) and not(open - low > close - open) and osc > volumeThresh
 short_signal = crossunder(close, lowUsePivot) and not(open - close < high - open) and osc > volumeThresh
 
+inTradeWindow = time >= startDate and time <= endDate
+
 // 执行交易
-if (long_signal)
+if (inTradeWindow and long_signal)
     strategy.entry("做多", strategy.long)
 
-if (short_signal)
+if (inTradeWindow and short_signal)
     strategy.entry("做空", strategy.short)
 
 // 止损和移动止损逻辑

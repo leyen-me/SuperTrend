@@ -111,6 +111,42 @@ def webhook():
         webhook_data = request.json
         logger.info(f"收到TradingView信号=======>")
         logger.info(f"{webhook_data}")
+        
+        # 获取交易动作和市场位置信息
+        action = webhook_data.get('action')
+        sentiment = webhook_data.get('sentiment')
+        
+        if not action or not sentiment:
+            """
+            {
+                "ticker": "{{ticker}}",
+                "time": "{{time}}",
+                "action": "{{strategy.order.action}}",
+                "sentiment": "{{strategy.market_position}}",
+                "price": "{{strategy.order.price}}"
+            }
+            """
+            logger.error("信号数据不完整，缺少action或sentiment")
+            return jsonify({'error': '信号数据不完整'}), 400
+            
+        logger.info(f"交易信号: action={action}, position={sentiment}")
+        
+        # 根据信号执行交易
+        if action == "buy" and sentiment == "long":
+            # 开多仓
+            logger.info("执行开多仓操作")
+            do_long()
+        elif action == "sell" and sentiment == "short":
+            # 开空仓
+            logger.info("执行开空仓操作")
+            do_short()
+        elif (action == "sell" and sentiment == "flat") or (action == "buy" and sentiment == "flat"):
+            # 平仓操作
+            logger.info("执行平仓操作")
+            do_close_position()
+        else:
+            logger.warning(f"未识别的交易信号组合: action={action}, position={sentiment}")
+        
         return jsonify({'status': 'success'}), 200
     except Exception as e:
         logger.error(f"处理webhook时出错: {e}")

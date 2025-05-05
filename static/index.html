@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>趋势交易系统</title>
+    <script src="/static/assets/axios.min.js"></script>
+    <style>
+      :root {
+        --primary-color: #007aff;
+        --success-color: #ffd700; /* 黄色 */
+        --danger-color: #800080; /* 紫色 */
+        --background-color: #f2f2f7;
+        --card-background: #ffffff;
+        --text-primary: #000000;
+        --text-secondary: #8e8e93;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      body {
+        background-color: var(--background-color);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .app-title {
+        text-align: center;
+        margin-bottom: 40px;
+        color: var(--text-primary);
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      .position-card {
+        background-color: var(--card-background);
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+      }
+
+      .position-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .trading-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+      }
+
+      button {
+        padding: 18px 0;
+        font-size: 18px;
+        font-weight: 600;
+        border: none;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 160px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(-100%);
+        transition: transform 0.4s ease;
+      }
+
+      button:hover::before {
+        transform: translateX(0);
+      }
+
+      .long {
+        background-color: var(--success-color);
+        color: #333;
+      }
+
+      .short {
+        background-color: var(--danger-color);
+        color: white;
+      }
+
+      .close {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      .button-icon {
+        margin-right: 8px;
+        font-size: 16px;
+      }
+
+      @media (max-width: 600px) {
+        .trading-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        button {
+          width: 100%;
+          max-width: 280px;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background-color: #000000;
+          --card-background: #1c1c1e;
+          --text-primary: #ffffff;
+          --text-secondary: #8e8e93;
+        }
+        
+        .long {
+          color: #000;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="app-title">趋势交易系统</h1>
+      <div class="position-card">
+        <div class="trading-buttons">
+          <button class="long" onclick="placeOrder('long')">
+            <i class="fas fa-arrow-up button-icon"></i>一键做多
+          </button>
+          <button class="short" onclick="placeOrder('short')">
+            <i class="fas fa-arrow-down button-icon"></i>一键做空
+          </button>
+          <button class="close" onclick="placeOrder('close')">
+            <i class="fas fa-times button-icon"></i>一键平仓
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      function placeOrder(type) {
+        axios
+          .post("/webhook", {
+            action: type,
+          })
+          .then((response) => {
+            alert("成功");
+          })
+          .catch((error) => {
+            alert("失败");
+          });
+      }
+    </script>
+  </body>
+</html>

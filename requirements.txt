@@ -1,2 +1,3 @@
-longport==2.1.12
-flask==2.3.3
+longport
+flask
+flask-cors

@@ -3,6 +3,7 @@ import logging
 from decimal import Decimal
 from flask import Flask, request, jsonify
 import datetime
+from flask_cors import CORS
 
 # ==================== Settings ====================
 # 做多的ETF
@@ -17,6 +18,8 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app)
+
 config = Config.from_env()
 trade_ctx = TradeContext(config)
 
@@ -98,6 +101,10 @@ def do_close_position():
 
 
 # ==================== Main ====================
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
@@ -108,7 +115,6 @@ def webhook():
     except Exception as e:
         logger.error(f"处理webhook时出错: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     logger.info("启动成功，当前北京时间：%s" % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

@@ -17,8 +17,8 @@ volumeThresh = input(20, title="成交量阈值")
 
 // 止损设置
 stopLossPercent = input(1.5, title="止损百分比 (%)")
-takeProfitPercent = input(8.0, title="移动止损触发百分比 (%)")
-trailStopPercent = input(1.5, title="移动止损回撤百分比 (%)")
+takeProfitPercent = input(10, title="移动止损触发百分比 (%)")
+trailStopPercent = input(2, title="移动止损回撤百分比 (%)")
 
 // 日期范围选择
 startDate = input(timestamp("2025-01-01"), "开始日期",  type = input.time, group="回测设置")

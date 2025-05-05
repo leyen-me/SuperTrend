@@ -1,0 +1,102 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © Leyen
+
+//@version=5
+strategy("RSI", "Leyen - Ultimate RSI Strategy", overlay=true, initial_capital=5000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+//------------------------------------------------------------------------------
+//Settings
+//-----------------------------------------------------------------------------{
+length = input.int(14, minval = 2)
+smoType1 = input.string('RMA', 'Method', options = ['EMA', 'SMA', 'RMA', 'TMA'])
+src = input(close, 'Source')
+
+arsiCss = input(color.silver, 'Color', inline = 'rsicss')
+autoCss = input(true, 'Auto', inline = 'rsicss')
+
+//Signal Line
+smooth = input.int(14, minval = 1, group = 'Signal Line')
+smoType2 = input.string('EMA', 'Method', options = ['EMA', 'SMA', 'RMA', 'TMA'], group = 'Signal Line')
+
+signalCss = input(#ff5d00, 'Color', group = 'Signal Line')
+
+//OB/OS Style - 修改为90和10用于交易信号
+obValue = input.float(87, 'Overbought (Sell Signal)', inline = 'ob', group = 'OB/OS Style')
+obCss = input(#089981, '', inline = 'ob', group = 'OB/OS Style')
+obAreaCss = input(color.new(#089981, 80), '', inline = 'ob', group = 'OB/OS Style')
+
+osValue = input.float(19, 'Oversold (Buy Signal)', inline = 'os', group = 'OB/OS Style')
+osCss = input(#f23645, '', inline = 'os', group = 'OB/OS Style')
+osAreaCss = input(color.new(#f23645, 80), '', inline = 'os', group = 'OB/OS Style')
+
+// 策略参数
+stopLossPercent = input.float(1.0, "止损百分比", minval=0.1, maxval=50, group="策略参数")
+trailStopPercent = input.float(1.5, "移动止损百分比", minval=0.1, maxval=50, group="策略参数")
+trailOffset = input.float(8.0, "移动止损激活百分比", minval=0.1, maxval=10.0, group="策略参数")
+useTrailingStop = input.bool(true, "使用移动止损", group="策略参数")
+
+// 日期范围选择
+startDate = input.time(timestamp("2025-01-01"), "开始日期", group="回测设置")
+endDate = input.time(timestamp("2030-12-31"), "结束日期", group="回测设置")
+
+//-----------------------------------------------------------------------------}
+//Functions
+//-----------------------------------------------------------------------------{
+ma(x, len, maType)=>
+    switch maType
+        'EMA' => ta.ema(x, len)
+        'SMA' => ta.sma(x, len) 
+        'RMA' => ta.rma(x, len) 
+        'TMA' => ta.sma(ta.sma(x, len), len)
+ 
+//-----------------------------------------------------------------------------}
+//Augmented RSI
+//-----------------------------------------------------------------------------{
+upper = ta.highest(src, length)
+lower = ta.lowest(src, length)
+r = upper - lower
+
+d = src - src[1]
+diff = upper > upper[1] ? r 
+  : lower < lower[1] ? -r 
+  : d
+
+num = ma(diff, length, smoType1)
+den = ma(math.abs(diff), length, smoType1)
+arsi = num / den * 50 + 50
+
+signal = ma(arsi, smooth, smoType2)
+
+//-----------------------------------------------------------------------------}
+// 策略逻辑
+//-----------------------------------------------------------------------------{
+// 定义交易信号
+buySignal = arsi < osValue and arsi[1] >= osValue
+sellSignal = arsi > obValue and arsi[1] <= obValue
+
+// 时间过滤
+inTradeWindow = time >= startDate and time <= endDate
+
+// 策略
+if inTradeWindow
+    // 买入信号
+    if buySignal
+        strategy.entry("买入", strategy.long)
+        
+        // 设置固定止损和移动止损
+        stopPrice = close * (1 - stopLossPercent / 100)
+        
+        if useTrailingStop
+            // 设置移动止损（激活价格和止损幅度）
+            activationPrice = close * (1 + trailOffset / 100)
+            strategy.exit("止损/移动止损", "买入", stop=stopPrice, trail_price=activationPrice, trail_offset=close * trailStopPercent / 100)
+        else
+            // 仅设置固定止损
+            strategy.exit("止损", "买入", stop=stopPrice)
+    
+    // 卖出信号 - 仅在没有触发移动止损的情况下考虑
+    if sellSignal
+        strategy.close("买入", comment="RSI卖出信号")
+
+// 绘制标记
+plotshape(buySignal, title="买入信号", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
+plotshape(sellSignal, title="卖出信号", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)

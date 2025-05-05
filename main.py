@@ -4,6 +4,7 @@ from decimal import Decimal
 from flask import Flask, request, jsonify
 import datetime
 from flask_cors import CORS
+import time
 
 # ==================== Settings ====================
 # 做多的ETF
@@ -135,10 +136,14 @@ def webhook():
         if action == "buy" and sentiment == "long":
             # 开多仓
             logger.info("执行开多仓操作")
+            do_close_position()
+            time.sleep(4)
             do_long()
         elif action == "sell" and sentiment == "short":
             # 开空仓
             logger.info("执行开空仓操作")
+            do_close_position()
+            time.sleep(4)
             do_short()
         elif (action == "sell" and sentiment == "flat") or (action == "buy" and sentiment == "flat"):
             # 平仓操作

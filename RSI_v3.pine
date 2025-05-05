@@ -84,8 +84,8 @@ signal = ma(arsi, smooth, smoType2)
 // 日K线跌幅检测
 //-----------------------------------------------------------------------------{
 // 获取日K线数据
-[dailyOpen, dailyHigh, dailyLow, dailyClose] = request.security(syminfo.tickerid, "D", [open, high, low, close], lookahead=barmerge.lookahead_on)
-prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+[dailyOpen, dailyHigh, dailyLow, dailyClose] = request.security(syminfo.tickerid, "D", [open, high, low, close], lookahead=barmerge.lookahead_off)
+prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
 
 // 检测是否为新的交易日
 isNewDay = ta.change(dayofmonth)
@@ -133,7 +133,7 @@ if isNewDay
 // 连续下跌天数检测
 //-----------------------------------------------------------------------------{
 // 获取日K线收盘价变化情况
-dailyPriceChange = request.security(syminfo.tickerid, "D", close - close[1], lookahead=barmerge.lookahead_on)
+dailyPriceChange = request.security(syminfo.tickerid, "D", close - close[1], lookahead=barmerge.lookahead_off)
 isDailyDown = dailyPriceChange < 0
 
 // 跟踪连续下跌天数

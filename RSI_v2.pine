@@ -2,7 +2,7 @@
 // © Leyen
 
 //@version=5
-strategy("RSI", "Leyen - Ultimate RSI Strategy v3", overlay=true, initial_capital=5000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy("RSI", "Leyen - Ultimate RSI Strategy v2", overlay=true, initial_capital=5000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 //------------------------------------------------------------------------------
 //Settings
 //-----------------------------------------------------------------------------{
@@ -79,8 +79,8 @@ signal = ma(arsi, smooth, smoType2)
 // 日K线跌幅检测
 //-----------------------------------------------------------------------------{
 // 获取日K线数据
-[dailyOpen, dailyHigh, dailyLow, dailyClose] = request.security(syminfo.tickerid, "D", [open, high, low, close], lookahead=barmerge.lookahead_on)
-prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+[dailyOpen, dailyHigh, dailyLow, dailyClose] = request.security(syminfo.tickerid, "D", [open, high, low, close], lookahead=barmerge.lookahead_off)
+prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
 
 // 检测是否为新的交易日
 isNewDay = ta.change(dayofmonth)

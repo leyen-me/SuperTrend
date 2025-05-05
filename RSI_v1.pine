@@ -2,7 +2,7 @@
 // © Leyen
 
 //@version=5
-strategy("RSI", "Leyen - Ultimate RSI Strategy", overlay=true, initial_capital=5000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy("RSI", "Leyen - Ultimate RSI Strategy v1", overlay=true, initial_capital=5000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 //------------------------------------------------------------------------------
 //Settings
 //-----------------------------------------------------------------------------{

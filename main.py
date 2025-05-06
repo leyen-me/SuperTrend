@@ -74,7 +74,6 @@ def buy(symbol: str):
         logger.info(f"最大买入数量: {max_buy_resp.cash_max_qty}")
         # 90%的现金仓位
         quantity = int(int(max_buy_resp.cash_max_qty) * 0.9)
-        quantity = 1
         trade_ctx.submit_order(
             symbol,
             OrderType.LO,

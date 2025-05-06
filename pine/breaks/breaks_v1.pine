@@ -1,0 +1,91 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © Leyen
+// 突破的本质是跟随趋势交易
+// 并不是每个突破都是有效的，当然市场存在假突破，但是假突破的概率很低，而且我们我们有1.5%的止损来判断是不是假突破
+// 移动止损能让我们的收益最大化, 移动止损的百分比是8%，回撤百分比是1.5%
+// 股票类型最好选择波动性较大的股票，比如TSLA，MSTR, BTC
+// 测试股票：TSLA，MSTR, BTC
+// 测试周期：5分钟、45分钟, 其中45分钟收益较高，算长远的价值投资了。5分钟则属于短线交易。
+
+// @version = 4
+strategy(title="breaks", shorttitle="Leyen - Breaks [5min]", overlay=true, max_bars_back=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+toggleBreaks = input(true, title="显示突破信号")
+leftBars = input(15, title="左侧柱数")
+rightBars = input(15, title="右侧柱数")
+volumeThresh = input(20, title="成交量阈值")
+
+// 止损设置
+stopLossPercent = input(1.5, type=input.float, title="止损百分比 (%)")
+takeProfitPercent = input(8, type=input.float, title="移动止损触发百分比 (%)")
+trailStopPercent = input(1, type=input.float, title="移动止损回撤百分比 (%)")
+
+// 日期范围选择
+startDate = input(timestamp("2025-05-03"), "开始日期",  type = input.time, group="回测设置")
+endDate = input(timestamp("2099-12-31"), "结束日期",  type = input.time, group="回测设置")
+
+highUsePivot = fixnan(pivothigh(leftBars, rightBars)[1])
+lowUsePivot = fixnan(pivotlow(leftBars, rightBars)[1])
+r1 = plot(highUsePivot, color=change(highUsePivot) ? na : #FF0000, linewidth=3, offset=-(rightBars+1), title="阻力位")
+s1 = plot(lowUsePivot, color=change(lowUsePivot) ? na : #233dee, linewidth=3, offset=-(rightBars+1), title="支撑位")
+
+// Volume %
+short = ema(volume, 5)
+long = ema(volume, 10)
+osc = 100 * (short - long) / long
+
+// 交易信号
+long_signal = crossover(close, highUsePivot) and not(open - low > close - open) and osc > volumeThresh
+short_signal = crossunder(close, lowUsePivot) and not(open - close < high - open) and osc > volumeThresh
+
+inTradeWindow = time >= startDate and time <= endDate
+
+// 执行交易
+if (inTradeWindow and long_signal)
+    strategy.entry("做多", strategy.long)
+
+if (inTradeWindow and short_signal)
+    strategy.entry("做空", strategy.short)
+
+// 止损和移动止损逻辑
+longStopPrice = 0.0
+shortStopPrice = 0.0
+longTrailPrice = 0.0
+shortTrailPrice = 0.0
+
+// 计算止损价格
+if (strategy.position_size > 0)
+    // 固定止损 - 亏损1%
+    longStopPrice := strategy.position_avg_price * (1 - stopLossPercent / 100)
+    
+    // 移动止损 - 价格上涨2%后，回调1%止损
+    longTrailActivationPrice = strategy.position_avg_price * (1 + takeProfitPercent / 100)
+    if (high >= longTrailActivationPrice)
+        trailPrice = high * (1 - trailStopPercent / 100)
+        longTrailPrice := max(longTrailPrice, trailPrice)
+        longStopPrice := max(longStopPrice, longTrailPrice)
+    
+    // 执行止损
+    strategy.exit("多单止损", "做多", stop=longStopPrice)
+
+if (strategy.position_size < 0)
+    // 固定止损 - 亏损1%
+    shortStopPrice := strategy.position_avg_price * (1 + stopLossPercent / 100)
+    
+    // 移动止损 - 价格下跌2%后，回调1%止损
+    shortTrailActivationPrice = strategy.position_avg_price * (1 - takeProfitPercent / 100)
+    if (low <= shortTrailActivationPrice)
+        trailPrice = low * (1 + trailStopPercent / 100)
+        shortTrailPrice := shortTrailPrice == 0 ? trailPrice : min(shortTrailPrice, trailPrice)
+        shortStopPrice := shortTrailPrice == 0 ? shortStopPrice : min(shortStopPrice, shortTrailPrice)
+    
+    // 执行止损
+    strategy.exit("空单止损", "做空", stop=shortStopPrice)
+
+// 绘制信号
+plotshape(toggleBreaks and short_signal, title="做空信号", text='S', style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, transp=0, size=size.tiny)
+plotshape(toggleBreaks and long_signal, title="做多信号", text='L', style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, transp=0, size=size.tiny)
+
+// 绘制牛熊吞没形态
+plotshape(toggleBreaks and crossover(close, highUsePivot) and open - low > close - open, title="牛市吞没", text='Bull Wick', style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, transp=0, size=size.tiny)
+plotshape(toggleBreaks and crossunder(close, lowUsePivot) and open - close < high - open, title="熊市吞没", text='Bear Wick', style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, transp=0, size=size.tiny) 

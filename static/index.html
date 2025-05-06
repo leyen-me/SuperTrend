@@ -157,23 +157,24 @@
       <h1 class="app-title">趋势交易系统</h1>
       <div class="position-card">
         <div class="trading-buttons">
-          <button class="long" onclick="placeOrder('long')">
+          <button class="long" onclick="placeOrder('buy', 'long')">
             <i class="fas fa-arrow-up button-icon"></i>一键做多
           </button>
-          <button class="short" onclick="placeOrder('short')">
+          <button class="short" onclick="placeOrder('sell', 'short')">
             <i class="fas fa-arrow-down button-icon"></i>一键做空
           </button>
-          <button class="close" onclick="placeOrder('close')">
+          <button class="close" onclick="placeOrder('sell', 'flat')">
             <i class="fas fa-times button-icon"></i>一键平仓
           </button>
         </div>
       </div>
     </div>
     <script>
-      function placeOrder(type) {
+      function placeOrder(action, sentiment) {
         axios
           .post("/webhook", {
-            action: type,
+            action: action,
+            sentiment: sentiment,
           })
           .then((response) => {
             alert("成功");

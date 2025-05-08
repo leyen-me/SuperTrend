@@ -1,0 +1,49 @@
+//@version=5
+strategy("DEMA_Supertrend", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+// DEMA设置
+length = input.int(200, minval=1, title="DEMA Length")
+src = input(close, title="Source")
+e1 = ta.ema(src, length)
+e2 = ta.ema(e1, length)
+dema = 2 * e1 - e2
+plot(dema, "DEMA", color=#43A047)
+
+// Supertrend设置
+Periods = input.int(title="ATR Period", defval=12)
+Multiplier = input.float(title="ATR Multiplier", step=0.1, defval=3.0)
+changeATR = input.bool(title="Change ATR Calculation Method ?", defval=true)
+atr2 = ta.sma(ta.tr, Periods)
+atr = changeATR ? ta.atr(Periods) : atr2
+up = src-(Multiplier*atr)
+up1 = nz(up[1],up)
+up := close[1] > up1 ? math.max(up,up1) : up
+dn = src+(Multiplier*atr)
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? math.min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+
+// 交易信号
+longCondition = trend == 1 and trend[1] == -1 and close > dema
+shortCondition = trend == -1 and trend[1] == 1 and close < dema
+
+// 止盈止损设置
+enableStopLoss = input.bool(true, "启用止损", group="止盈止损设置")
+stopLossPercent = input.float(2, "止损百分比", minval=0.1, step=0.1, group="止盈止损设置")
+
+// 执行交易
+if (longCondition)
+    strategy.entry("做多", strategy.long)
+    if (enableStopLoss)
+        strategy.exit("做多止盈止损", "做多", stop=enableStopLoss ? close * (1 - stopLossPercent/100) : na)
+
+if (shortCondition)
+    strategy.entry("做空", strategy.short)
+    if (enableStopLoss)
+        strategy.exit("做空止盈止损", "做空", stop=enableStopLoss ? close * (1 + stopLossPercent/100) : na)
+
+// 绘制信号
+plotshape(longCondition, title="做多信号", location=location.belowbar, style=shape.triangleup, size=size.small, color=color.green)
+plotshape(shortCondition, title="做空信号", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red) 

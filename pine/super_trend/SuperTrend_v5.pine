@@ -1,0 +1,95 @@
+//@version=4
+strategy("Supertrend Strategy", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+Periods = input(title="ATR Period", type=input.integer, defval=7)
+src = input(hl2, title="Source")
+Multiplier = input(title="ATR Multiplier", type=input.float, step=0.1, defval=2.8)
+changeATR= input(title="Change ATR Calculation Method ?", type=input.bool, defval=true)
+showsignals = input(title="Show Buy/Sell Signals ?", type=input.bool, defval=true)
+highlighting = input(title="Highlighter On/Off ?", type=input.bool, defval=true)
+
+atr2 = sma(tr, Periods)
+atr= changeATR ? atr(Periods) : atr2
+up=src-(Multiplier*atr)
+up1 = nz(up[1],up)
+up := close[1] > up1 ? max(up,up1) : up
+dn=src+(Multiplier*atr)
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+
+// Trading logic
+longCondition = trend == 1 and trend[1] == -1
+shortCondition = trend == -1 and trend[1] == 1
+
+// Variables for tracking entry prices and highest/lowest prices
+var float entryPrice = 0.0
+var float highestPrice = 0.0
+var float lowestPrice = 0.0
+var bool takeProfitTriggered = false
+
+// Take profit levels based on ATR
+takeProfitMultiplier = input(title="Take Profit ATR Multiplier", type=input.float, defval=2.0, step=0.1)
+var float longTakeProfit = 0.0
+var float shortTakeProfit = 0.0
+
+// Execute trades with new stop loss and take profit logic
+if (longCondition)
+    if (strategy.position_size < 0)  // If we have a short position
+        strategy.close("Short")      // Close the short position first
+    strategy.entry("Long", strategy.long)
+    entryPrice := close
+    highestPrice := close
+    longTakeProfit := close + (atr * takeProfitMultiplier)
+    // Stop loss: exit if next candle closes lower
+    strategy.exit("Long SL", "Long", when=close[1] < close[2])
+    // Take profit: exit if price reaches take profit level
+    strategy.exit("Long TP", "Long", limit=longTakeProfit)
+
+if (shortCondition)
+    if (strategy.position_size > 0)  // If we have a long position
+        strategy.close("Long")       // Close the long position first
+    strategy.entry("Short", strategy.short)
+    entryPrice := close
+    lowestPrice := close
+    shortTakeProfit := close - (atr * takeProfitMultiplier)
+    // Stop loss: exit if next candle closes higher
+    strategy.exit("Short SL", "Short", when=close[1] > close[2])
+    // Take profit: exit if price reaches take profit level
+    strategy.exit("Short TP", "Short", limit=shortTakeProfit)
+
+// Update highest/lowest prices during the trade
+if (strategy.position_size > 0)
+    highestPrice := max(highestPrice, high)
+    longTakeProfit := max(longTakeProfit, highestPrice + (atr * takeProfitMultiplier))
+    strategy.exit("Long TP", "Long", limit=longTakeProfit)
+
+if (strategy.position_size < 0)
+    lowestPrice := min(lowestPrice, low)
+    shortTakeProfit := min(shortTakeProfit, lowestPrice - (atr * takeProfitMultiplier))
+    strategy.exit("Short TP", "Short", limit=shortTakeProfit)
+
+// Plotting
+upPlot = plot(trend == 1 ? up : na, title="Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
+buySignal = trend == 1 and trend[1] == -1
+plotshape(buySignal ? up : na, title="UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
+plotshape(buySignal and showsignals ? up : na, title="Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
+
+dnPlot = plot(trend == 1 ? na : dn, title="Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
+sellSignal = trend == -1 and trend[1] == 1
+plotshape(sellSignal ? dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
+plotshape(sellSignal and showsignals ? dn : na, title="Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
+
+mPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+longFillColor = highlighting ? (trend == 1 ? color.green : color.white) : color.white
+shortFillColor = highlighting ? (trend == -1 ? color.red : color.white) : color.white
+fill(mPlot, upPlot, title="UpTrend Highligter", color=longFillColor)
+fill(mPlot, dnPlot, title="DownTrend Highligter", color=shortFillColor)
+
+// Alerts
+alertcondition(buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
+alertcondition(sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
+changeCond = trend != trend[1]
+alertcondition(changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")

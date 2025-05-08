@@ -230,7 +230,7 @@ def webhook_test():
     webhook_data = request.json
     logger.info(f"收到TradingView信号=======>")
     logger.info(f"{webhook_data}")
-
+    return jsonify({'status': 'success'}), 200
 
 if __name__ == '__main__':
     logger.info("启动成功，当前北京时间：%s" % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
